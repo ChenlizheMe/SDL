@@ -1437,12 +1437,22 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             mTextEdit.setVisibility(View.VISIBLE);
             mTextEdit.requestFocus();
 
-            InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.showSoftInput(mTextEdit, 0);
-
-            if (imm.isAcceptingText()) {
-                onNativeScreenKeyboardShown();
-            }
+            final InputMethodManager imm = (InputMethodManager) getContext()
+                    .getSystemService(Context.INPUT_METHOD_SERVICE);
+            // Reset the reused hidden editor before every show. Some Android 13+
+            // IMEs keep the old InputConnection after hide and ignore the next show.
+            imm.restartInput(mTextEdit);
+            // Defer until focus/layout have settled; inline show is ignored while a
+            // previous hide is still completing on several vendor IMEs.
+            mTextEdit.post(() -> {
+                if (mTextEdit.getVisibility() != View.VISIBLE || !mTextEdit.hasFocus()) {
+                    return;
+                }
+                imm.showSoftInput(mTextEdit, InputMethodManager.SHOW_IMPLICIT);
+                if (imm.isAcceptingText()) {
+                    onNativeScreenKeyboardShown();
+                }
+            });
         }
     }
 

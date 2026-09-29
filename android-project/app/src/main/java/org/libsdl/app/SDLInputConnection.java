@@ -36,8 +36,27 @@ class SDLInputConnection extends BaseInputConnection
          * as we do with physical keyboards, let's just use it to hide the keyboard.
          */
 
-        if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+        final int keyCode = event.getKeyCode();
+        if (keyCode == KeyEvent.KEYCODE_ENTER) {
             if (SDLActivity.onNativeSoftReturnKey()) {
+                return true;
+            }
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                SDLActivity.onNativeKeyDown(keyCode);
+                return true;
+            }
+            if (event.getAction() == KeyEvent.ACTION_UP) {
+                SDLActivity.onNativeKeyUp(keyCode);
+                return true;
+            }
+        }
+        if (keyCode == KeyEvent.KEYCODE_DEL) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                SDLActivity.onNativeKeyDown(keyCode);
+                return true;
+            }
+            if (event.getAction() == KeyEvent.ACTION_UP) {
+                SDLActivity.onNativeKeyUp(keyCode);
                 return true;
             }
         }
@@ -70,7 +89,8 @@ class SDLInputConnection extends BaseInputConnection
         if (beforeLength > 0 && afterLength == 0) {
             // backspace(s)
             while (beforeLength-- > 0) {
-                nativeGenerateScancodeForUnichar('\b');
+                SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_DEL);
+                SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_DEL);
             }
             return true;
        }

@@ -1541,7 +1541,6 @@ void X11_ShowWindow(SDL_VideoDevice *_this, SDL_Window *window)
     Display *display = data->videodata->display;
     bool bActivate = SDL_GetHintBoolean(SDL_HINT_WINDOW_ACTIVATE_WHEN_SHOWN, true);
     bool set_position = false;
-    XEvent event;
 
     // If the window was previously shown, pump events to avoid possible positioning issues.
     if (data->was_shown) {
@@ -1561,12 +1560,10 @@ void X11_ShowWindow(SDL_VideoDevice *_this, SDL_Window *window)
 
     if (!X11_IsWindowMapped(_this, window)) {
         X11_XMapRaised(display, data->xwindow);
-        /* Blocking wait for "MapNotify" event.
-         * We use X11_XIfEvent because pXWindowEvent takes a mask rather than a type,
-         * and XCheckTypedWindowEvent doesn't block */
-        if (!(window->flags & SDL_WINDOW_EXTERNAL) && X11_IsDisplayOk(display)) {
-            X11_XIfEvent(display, &event, &isMapNotify, (XPointer)&data->xwindow);
-        }
+        /* Mapping is asynchronous by X11 design. A compositor may keep a new
+         * window iconic while its workspace is inactive; waiting for MapNotify
+         * here would block the entire engine. X11_PumpEvents publishes the
+         * window state when MapNotify actually arrives. */
         X11_XFlush(display);
         set_position = data->pending_position ||
                        (!(window->flags & SDL_WINDOW_BORDERLESS) && !window->undefined_x && !window->undefined_y);
